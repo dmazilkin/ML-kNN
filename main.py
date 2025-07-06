@@ -20,12 +20,15 @@ def create_test_data() -> pd.DataFrame:
 
 def main():
     X, y = create_data()
-    model = MyKNNClf(k=10)
+    model = MyKNNClf(k=10, metric='cosine', weight='rank')
     size = model.fit(X, y)
     
     X_test = create_test_data()
     y_test = model.predict(X_test)
     y_test_proba = model.predict_proba(X_test)
+    
+    print(y_test)
+    print(y_test_proba)
     
     figure, axis = plt.subplots(1, 2)
     axis[0].scatter(X.to_numpy()[y == 1][:, 0], X.to_numpy()[y == 1][:, 1], color='blue')

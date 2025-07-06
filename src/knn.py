@@ -3,7 +3,8 @@ import numpy as np
 from typing import Tuple, List
 
 class MyKNNClf:
-    def __init__(self, k: int = 3, metric: str = 'euclidean'):
+    
+    def __init__(self, k: int = 3, metric: str = 'euclidean', weight: str = 'uniform'):
         self.k = k
         self.metric = metric
         self._available_metrics = {
@@ -11,6 +12,12 @@ class MyKNNClf:
             'manhattan': self.calc_manhattan,
             'chebyshev': self.calc_chebyshev,
             'cosine': self.calc_cosine,
+        }
+        self.weight = weight
+        self._available_weights = {
+            'uniform': self.predict_by_count,
+            'distance': self.predict_by_distance,
+            'rank': self.predict_by_rank,
         }
         
     def __str__(self):
@@ -35,19 +42,62 @@ class MyKNNClf:
     def calc_cosine(self, X_input: np.array) -> pd.DataFrame:
         return pd.DataFrame({'dist': 1 - np.sum(self.X * X_input, axis=1) / np.linalg.norm(self.X, ord=2, axis=1) / np.linalg.norm(X_input, ord=2, axis=1)})
     
+    def sort_nearest(self, dist: pd.DataFrame) -> pd.DataFrame:
+        nearest: pd.DataFrame = dist.sort_values(by='dist')[:self.k]
+        nearest = nearest.reset_index(drop=False)
+        nearest = nearest.rename(columns={'index': 'label_index'})
+        classes = pd.DataFrame({'class': self.y[nearest['label_index']]}, dtype='int')
+        nearest = pd.concat([nearest, classes.reset_index(drop=True)], axis=1)
+        
+        return nearest
+    
+    def predict_by_count(self, nearest: pd.DataFrame, is_proba: bool = False) -> pd.Series:
+        labels = self.y.unique()
+        weighted = pd.Series(data=np.zeros(labels.size), index=labels, dtype=int)
+        for label in labels:
+            weighted[label] = nearest[nearest['class'] == label]['class'].size
+            
+        if is_proba:
+            normalized = weighted.sum()
+            weighted /= normalized
+            
+        return weighted
+    
+    def predict_by_distance(self, nearest: pd.DataFrame, is_proba: bool = False) -> pd.Series:
+        labels = self.y.unique()
+        weighted = pd.Series(data=np.zeros(labels.size), index=labels)
+        for label in labels:
+            weighted[label] = np.sum(1 / nearest[nearest['class'] == label]['dist'])
+        if is_proba:
+            normalized = np.sum(1 / nearest['dist'])
+            weighted /= normalized
+            
+        return weighted
+            
+    def predict_by_rank(self, nearest: pd.DataFrame, is_proba: bool = False) -> pd.Series:
+        labels = self.y.unique()
+        weighted = pd.Series(data=np.zeros(labels.size), index=labels)
+        for label in labels:
+            weighted[label] = np.sum(1 / (nearest[nearest['class'] == label].index + 1)) 
+            
+        if is_proba:
+            normalized = np.sum(1 / (nearest.index + 1))
+            weighted /= normalized
+            
+        return weighted
+            
     def _predict_class(self, X_input: np.array) -> int:
         dist = self._available_metrics[self.metric](X_input)
-        nearest = dist.sort_values(by='dist')[:self.k]
-        nearest_classes = self.y[nearest.index]
-        
-        return 1 if nearest_classes[nearest_classes == 1].size >= nearest_classes[nearest_classes == 0].size else 0
+        nearest = self.sort_nearest(dist)
+        classes = self._available_weights[self.weight](nearest)
+        return classes.idxmax()
         
     def _predict_class_proba(self, X_input: np.array) -> float:
         dist = self._available_metrics[self.metric](X_input)
-        nearest = dist.sort_values(by='dist')[:self.k]
-        nearest_classes = self.y[nearest.index]
-        
-        return nearest_classes.sum() / nearest_classes.size
+        nearest = self.sort_nearest(dist)
+        classes = self._available_weights[self.weight](nearest, is_proba=True)
+                
+        return classes[1]
     
     def predict(self, X_input: pd.DataFrame) -> pd.Series:
         y_predicted = np.zeros(X_input.shape[0], dtype='int')
