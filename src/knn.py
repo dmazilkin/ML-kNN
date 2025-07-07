@@ -120,3 +120,36 @@ class MyKNNClf:
             y_proba[ind] = self._predict_class_proba(data)
             
         return y_proba
+    
+class MyKNNReg:
+
+    def __init__(self, k: int = 3):
+        self.k = k
+        
+    def __str__(self):
+        return f"MyKNNReg class: k={self.k}"
+    
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> Tuple[int, int]:
+        self.X = X
+        self.y = y
+        self.train_size = X.shape
+        
+        return self.train_size
+    
+    def _predict_target(self, X_input: np.array) -> int:
+        dist = pd.DataFrame({'l2': np.linalg.norm(X_input - self.X.to_numpy(), ord=2, axis=1)})
+        nearest = dist.sort_values(by='l2')[:self.k]
+        nearest_target = self.y[nearest.index]
+        
+        return np.mean(nearest_target)
+    
+    def predict(self, X_input: pd.DataFrame) -> pd.Series:
+        y_predicted = np.zeros(X_input.shape[0], dtype='float')
+        X_input.reset_index(inplace=True, drop=True)
+        
+        for feature in X_input.iterrows():
+            ind = feature[0]
+            data = feature[1].to_numpy().reshape((1, X_input.shape[1]))
+            y_predicted[ind] = self._predict_target(data)
+        
+        return y_predicted
