@@ -123,8 +123,15 @@ class MyKNNClf:
     
 class MyKNNReg:
 
-    def __init__(self, k: int = 3):
+    def __init__(self, k: int = 3, metric: str = 'euclidean'):
         self.k = k
+        self.metric = metric
+        self._available_metrics = {
+            'euclidean': self.calc_euclidean,
+            'manhattan': self.calc_manhattan,
+            'chebyshev': self.calc_chebyshev,
+            'cosine': self.calc_cosine,
+        }
         
     def __str__(self):
         return f"MyKNNReg class: k={self.k}"
@@ -136,9 +143,22 @@ class MyKNNReg:
         
         return self.train_size
     
+    def calc_euclidean(self, X_input: np.array) -> pd.DataFrame:
+        return pd.DataFrame({'dist': np.linalg.norm(X_input - self.X.to_numpy(), ord=2, axis=1)})
+    
+    def calc_chebyshev(self, X_input: np.array) -> pd.DataFrame:
+        return pd.DataFrame({'dist': np.max(np.abs(X_input - self.X.to_numpy()), axis=1)})
+    
+    def calc_manhattan(self, X_input: np.array) -> pd.DataFrame:
+        return pd.DataFrame({'dist': np.linalg.norm(X_input - self.X.to_numpy(), ord=1, axis=1)})
+    
+    def calc_cosine(self, X_input: np.array) -> pd.DataFrame:
+        return pd.DataFrame({'dist': 1 - np.sum(self.X * X_input, axis=1) / np.linalg.norm(self.X, ord=2, axis=1) / np.linalg.norm(X_input, ord=2, axis=1)})
+    
     def _predict_target(self, X_input: np.array) -> int:
-        dist = pd.DataFrame({'l2': np.linalg.norm(X_input - self.X.to_numpy(), ord=2, axis=1)})
-        nearest = dist.sort_values(by='l2')[:self.k]
+        dist = self._available_metrics[self.metric](X_input)
+        nearest: pd.DataFrame = dist.sort_values(by='dist')[:self.k]
+        nearest = dist.sort_values(by='dist')[:self.k]
         nearest_target = self.y[nearest.index]
         
         return np.mean(nearest_target)
