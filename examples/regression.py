@@ -5,25 +5,23 @@ from typing import Tuple
 
 from src.knn_regression import MyKNNReg
 
-N = 50
-N_test = 10
-
-def create_data_regression() -> Tuple[pd.DataFrame, pd.Series]:
+def create_data_regression(N: int) -> Tuple[pd.DataFrame, pd.Series]:
     np.random.seed(42)
     X = pd.DataFrame(np.zeros((N, 2)) + 10 * np.random.rand(N, 2))
     Y = 5 + 2 * X.loc[:, 0] + X.loc[:, 1] ** 2
     
     return X, Y
 
-def create_test_data_regression() -> pd.DataFrame:
+def create_test_data_regression(N_test: int) -> pd.DataFrame:
     return pd.DataFrame(np.zeros((N_test, 2)) + 10 * np.random.rand(N_test, 2))
 
-def regression_example():
-    X, y = create_data_regression()
-    model = MyKNNReg(k=10, weight='distance')
+def regression_example(train: int, predict: int, k: int, weight: str, metric: str):
+    N_train, N_test = train, predict
+    X, y = create_data_regression(N_train)
+    model = MyKNNReg(k=k, weight=weight, metric=metric)
     size = model.fit(X, y)
     
-    X_test = create_test_data_regression()
+    X_test = create_test_data_regression(N_test)
     y_test = model.predict(X_test)
     
     fig = plt.figure()

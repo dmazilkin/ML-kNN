@@ -5,25 +5,23 @@ from typing import Tuple
 
 from src.knn_classification import MyKNNClf
 
-N = 50
-N_test = 10
-
-def create_data_classification() -> Tuple[pd.DataFrame, pd.Series]:
+def create_data_classification(N: int) -> Tuple[pd.DataFrame, pd.Series]:
     np.random.seed(42)
     X = pd.DataFrame(np.zeros((N, 2)) + 10 * np.random.rand(N, 2))
     Y = (X.loc[:, 0] > X.loc[:, 1] - 2).astype(int)
     
     return X, Y
 
-def create_test_data_classification() -> pd.DataFrame:
+def create_test_data_classification(N_test: int) -> pd.DataFrame:
     return pd.DataFrame(np.zeros((N_test, 2)) + 10 * np.random.rand(N_test, 2))
 
-def classification_example():
-    X, y = create_data_classification()
-    model = MyKNNClf(k=10, metric='cosine', weight='rank')
+def classification_example(train: int, predict: int, k: int, weight: str, metric: str):
+    N_train, N_test = train, predict
+    X, y = create_data_classification(N_train)
+    model = MyKNNClf(k=k, metric=metric, weight=weight)
     size = model.fit(X, y)
     
-    X_test = create_test_data_classification()
+    X_test = create_test_data_classification(N_test)
     y_test = model.predict(X_test)
     y_test_proba = model.predict_proba(X_test)
     
