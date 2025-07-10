@@ -28,6 +28,6 @@ python main.py [OPTIONS]
 - **-e, --example** (required) - type of example to run. Available examples: regression, classification.
 - **-t, --train** (required) - size of training dataset.
 - **-p, --predict** (required) - size of dataset to predict.
-- **-k' (required) - count of nearest neighbors that are using for predicting.
+- **-k** (required) - count of nearest neighbors that are using for predicting.
 - **-m, --metric** (optional) - distance metrics are used to determine the similarity between objects. Available metrics: euclidean, manhattain, chebyshev, cosine. Default metric is euclidean.
 - **-w, --weight** (optional) - set weight for weighted kNN. Defalut equal weight for all neighbors is set.
