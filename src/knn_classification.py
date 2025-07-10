@@ -120,3 +120,4 @@ class MyKNNClf:
             y_proba[ind] = self._predict_class_proba(data)
             
         return y_proba
+    
